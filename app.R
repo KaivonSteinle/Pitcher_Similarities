@@ -46,30 +46,25 @@ library("nleqslv")
 kable <- knitr::kable
 
 #Import Data
-Pitches <- read_excel("Pitches.xlsx", col_types = c("numeric", 
-                                                    "text", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "text", "text", "text", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "text", 
-                                                    "numeric", "numeric", "text", "text"))
-Pitches <- Pitches %>% filter(!is.na(Rel_X) & !is.na(Rel_Z) & !is.na(Ext))
+Pitches <- read_excel("Pitch Types.xlsx", 
+                          col_types = c("numeric", "text", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "text", "text", "text", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "numeric", 
+                                        "numeric", "numeric", "text"))
+Pitches <- Pitches %>% filter(!is.na(Rel_X) & !is.na(Rel_Z) & !is.na(Ext) & !is.na(height))
 Pitches$Hor_Break <- 12 * Pitches$Hor_Break
 Pitches$Ver_Break <- 12 * Pitches$Ver_Break
 #Make a non FB Data Set
 Non_FB <- Pitches %>% filter(Pitch_Type_2 == "CB" | Pitch_Type_2 == "CH" | Pitch_Type_2 == "SL")
-
-
 
 
 #Begin creating the ui
@@ -90,8 +85,8 @@ ui <- fluidPage(
   br(),
   fluidRow(column(2, numericInput("Velo", "Velocity", 93)),       
            column(2, numericInput("Spin", "Spin Rate", 2240)),
-           column(2, numericInput("H_Break", "Horizontal Break (in)", 20)),
-           column(2, numericInput("V_Break", "Vertical Break (in)", 20)),
+           column(2, numericInput("H_Break", "Horizontal Break (in)", 15)),
+           column(2, numericInput("V_Break", "Vertical Break (in)", 10)),
            column(2, selectInput(inputId = "Type", label = "Pitch Type", choices = sort(unique(Non_FB$Pitch_Type_2)), selected = sort(unique(Non_FB$Pitch_Type_2)), multiple = TRUE)),
            column(1, numericInput("SpinRange", "Min Spin", 1200)),
            column(1, numericInput("SpinRange2", "Max Spin", 3200))),
@@ -100,7 +95,7 @@ ui <- fluidPage(
     column(12, DT::dataTableOutput("BB_Comps"))),
   br(),
   fluidRow(
-    column(5, offset = 4, plotlyOutput("Comps_Graph"))),
+    column(12, plotlyOutput("Comps_Graph"))),
   br(),
   br()
 )
@@ -114,11 +109,24 @@ server <- (function(input, output) {
   #Get the data frame
   Data <- eventReactive(input$go, {
     #Create data frame of just the player
-    New_Player <- data.frame(000000, "Name", 2020, 100, input$RelH, input$RelS, 1, input$Ext, 1, input$Velo, input$H_Break, 1, input$V_Break, input$Spin, 1, 1, 1, 1, 1, 1, 1, "A", "Fastball", "A", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, "kaivon01", 1, input$Height, "R", input$Throws)      
-    #Naming the Data Frame
-    colnames(New_Player) <- colnames(Pitches)
+    New_Player <- c(000000, "Name", 2020, 100, input$RelH, input$RelS, 1, input$Ext, 1, input$Velo, input$H_Break, 1, input$V_Break, input$Spin, 1, 1, 1, 1, 1, 1, 1, "Fastball", "FB", "A", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, input$height, input$Throws)
     #Using rbind() function to insert above observation  
     Pitches <- rbind(New_Player, Pitches)
+    Pitches$Rel_Y <- as.numeric(Pitches$Rel_Y)
+    Pitches$Rel_Z <- as.numeric(Pitches$Rel_Z)
+    Pitches$Rel_X <- as.numeric(Pitches$Rel_X)
+    Pitches$Ext <- as.numeric(Pitches$Ext)
+    Pitches$Mean_Velo <- as.numeric(Pitches$Mean_Velo)
+    Pitches$Hor_Break <- as.numeric(Pitches$Hor_Break)
+    Pitches$Ver_Break <- as.numeric(Pitches$Ver_Break)
+    Pitches$SM <- as.numeric(Pitches$SM)
+    Pitches$CSW <- as.numeric(Pitches$CSW)
+    Pitches$EV.x <- as.numeric(Pitches$EV.x)
+    Pitches$xwOBA <- as.numeric(Pitches$xwOBA)
+    Pitches$xFIP <- as.numeric(Pitches$xFIP)
+    Pitches$SIERA <- as.numeric(Pitches$SIERA)
+    Pitches$Spin <- as.numeric(Pitches$Spin)
+    Pitches$height <- as.numeric(Pitches$height)
     Pitches <- as.data.frame(Pitches)
   } )
   
@@ -128,8 +136,8 @@ server <- (function(input, output) {
     #Filter for Fastballs
     DataFB <- Data()
     DataFB <- DataFB %>% filter(throws == input$Throws)
-    DataFB <- DataFB %>% filter(Pitch_Type_2 == "Fastball")
-    FB <- Data() %>% filter(Pitch_Type_2 == "Fastball")
+    DataFB <- DataFB %>% filter(Pitch_Type_2 == "FB")
+    FB <- Data() %>% filter(Pitch_Type_2 == "FB")
     FB <- FB %>% filter(throws == input$Throws)
     #Adjust the weight next to sd(variable) to open and close windows; bigger the number the wider the range
     height_low <- input$Height - 2*sd(FB$height)
@@ -138,8 +146,8 @@ server <- (function(input, output) {
     rs_low <- input$RelS - 2*sd(FB$Rel_X)
     rs_high <- input$RelS + 2*sd(FB$Rel_X)
     
-    rh_low <- input$RelH - 1.5*sd(FB$Rel_Z)
-    rh_high <- input$RelH + 1.5*sd(FB$Rel_Z)
+    rh_low <- input$RelH - 1*sd(FB$Rel_Z)
+    rh_high <- input$RelH + 1*sd(FB$Rel_Z)
     
     ex_low <- input$Ext - 2*sd(FB$Ext)
     ex_high <- input$Ext + 2*sd(FB$Ext)
@@ -160,7 +168,7 @@ server <- (function(input, output) {
     #FB Similarity:
     RL_Top_50 <- rel_comp 
     #Getting Inputs
-    DataFB_2 <- RL_Top_50[, c("Mean_Velo", "Spin")]
+    DataFB_2 <- RL_Top_50[, c("Mean_Velo", "Spin", "Hor_Break", "Ver_Break")]
     #Scale and center data
     DataFB_2 <- scale(DataFB_2, center = TRUE)
     #Find the distance for every player to every other one
@@ -196,7 +204,7 @@ server <- (function(input, output) {
     
     #Taking certain columns
     Comps <- Rejoined
-    Comps <- Comps[, c('Name', "Year", "Pitch_Type_2", "Pitch_Count", "Mean_Velo", "Spin", "Hor_Break", "Ver_Break", "SM", "CSW", "EV", "xwOBA", "xFIP", "SIERA")]
+    Comps <- Comps[, c('Name', "Year", "Pitch_Type_2", "Pitch_Count", "Mean_Velo", "Spin", "Hor_Break", "Ver_Break", "SM", "CSW", "EV.x", "xwOBA", "xFIP", "SIERA")]
     Comps <- as.data.frame(Comps)
   })
   
@@ -206,7 +214,7 @@ server <- (function(input, output) {
     #Round Numbers
     dt$SM <- round(dt$SM * 100, 0)
     dt$CSW <- round(dt$CSW * 100, 0)
-    dt$EV <- round(dt$EV, 0)
+    dt$EV.x <- round(dt$EV.x, 0)
     dt$xwOBA <- round(dt$xwOBA, 3)
     dt$Mean_Velo <- round(dt$Mean_Velo, 1)
     dt$Spin <- round(dt$Spin, 0)
@@ -232,8 +240,8 @@ server <- (function(input, output) {
   #Make the graph a reactive ggplot graph
   Graph <- eventReactive(input$go, {
     k <- Comps()
-    fig <- ggplot(k, aes(x = `Horizontal Break`, y = `Vertical Break`, colour = `SwStr%`, size = 1.75))  + geom_hline(yintercept = 0, color = "black") + geom_vline(xintercept = 0, color = "black") + geom_point(aes(text=map(paste('<b>Name:</b>', Name, '<br>', '<b>Year:</b>', Year, '<br>', '<b>Type:</b>', Type, '<br>', '<b>SwStr%:</b>', `SwStr%`), HTML))) + ggtitle("Secondary Pitch Movement for Fastball Comps") + labs(y = "Vertical Break (in)", x = "Horizontal Break (in)") + theme_bw() + theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(face = "bold", size = 13)) + theme(axis.title.x = element_text(face = "bold")) + theme(axis.title.y = element_text(face = "bold"))  + scale_color_gradient("SwStr%",low="grey", high="red", space ="Lab") + theme(legend.title = element_text(face = "bold")) + scale_x_continuous(breaks=seq(-30, 30, 10), limits=c(-30, 30)) + scale_y_continuous(breaks=seq(-30, 30, 10), limits=c(-30, 30))
-    fig <- ggplotly(fig, tooltip="text") %>% layout(height = 550, width = 600)
+    fig <- ggplot(k, aes(x = `Horizontal Break`, y = `Vertical Break`, colour = `SwStr%`, size = 1.1)) + facet_wrap(~Type) + geom_hline(yintercept = 0, color = "black") + geom_vline(xintercept = 0, color = "black") + geom_point(aes(text=map(paste('<b>Name:</b>', Name, '<br>', '<b>Year:</b>', Year, '<br>', '<b>Type:</b>', Type, '<br>', '<b>SwStr%:</b>', `SwStr%`), HTML), size = 1.2)) + ggtitle("Secondary Pitch Movement for Fastball Comps") + labs(y = "Vertical Break (in)", x = "Horizontal Break (in)") + theme_bw() + theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(face = "bold", size = 11, margin = margin(0, 0, 30, 0))) + theme(axis.title.x = element_text(face = "bold")) + theme(axis.title.y = element_text(face = "bold", margin = margin(0,30,0,0)))  + scale_color_gradient("SwStr%",low="grey", high="red", space ="Lab") + theme(legend.title = element_text(face = "bold")) + scale_x_continuous(breaks=seq(-30, 30, 10), limits=c(-30, 30)) + scale_y_continuous(breaks=seq(-30, 30, 10), limits=c(-30, 30))
+    fig <- ggplotly(fig, tooltip="text")
     fig
   })
   
